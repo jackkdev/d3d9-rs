@@ -1,0 +1,15 @@
+[package]
+name = "d3dx9-sys"
+description = "Low-level types for the Direct3DX9 library."
+documentation = "https://docs.rs/d3dx9-sys"
+repository = "https://github.com/jackkdev/d3d9-rs.git"
+readme = "../README.md"
+license-file = "../LICENSE.md"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+[dependencies.winapi]
+version = "0.3.9"
+features = ["d3d9", "d3d9types", "d3d9caps", "minwindef", "unknwnbase", "winnt", "winbase"]
