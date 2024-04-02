@@ -9,6 +9,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+bitfield = "0.14.0"
 d3dx9-sys = { path = "../d3dx9-sys" }
 
 [dependencies.winapi]
