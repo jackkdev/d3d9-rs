@@ -1,4 +1,4 @@
-use std::{ffi::CString, mem::MaybeUninit, ptr::NonNull};
+use std::{ffi::CString, mem::MaybeUninit, ptr, ptr::NonNull};
 
 use d3dx9_sys::d3dx9shader::{ID3DXConstantTable, D3DXCONSTANTTABLE_DESC, D3DXCONSTANT_DESC};
 use winapi::um::winnt::VOID;
@@ -35,14 +35,24 @@ impl ConstantTable {
         unsafe { self.inner.GetBufferSize() }
     }
 
-    pub fn get_constant(&self, constant: Handle, index: u32) -> Handle {
-        unsafe { self.inner.GetConstant(constant, index) }
+    pub fn get_constant(&self, constant: Option<Handle>, index: u32) -> Handle {
+        unsafe {
+            self.inner
+                .GetConstant(constant.unwrap_or(ptr::null_mut()), index)
+        }
     }
 
-    pub fn get_constant_by_name<N: Into<String>>(&self, constant: Handle, name: N) -> Handle {
+    pub fn get_constant_by_name<N: Into<String>>(
+        &self,
+        constant: Option<Handle>,
+        name: N,
+    ) -> Handle {
         let name = name.into();
         let name = CString::new(name).expect("failed to convert name into cstring");
-        unsafe { self.inner.GetConstantByName(constant, name.as_ptr()) }
+        unsafe {
+            self.inner
+                .GetConstantByName(constant.unwrap_or(ptr::null_mut()), name.as_ptr())
+        }
     }
 
     pub fn get_constant_desc<N: Into<String>>(
@@ -171,12 +181,10 @@ impl ConstantTable {
         &self,
         device: &Device,
         constant: Handle,
-        values: &[f32],
+        values: *const f32,
     ) -> WindowsResult<()> {
         unsafe {
-            check_hresult!(self
-                .inner
-                .SetMatrix(device.as_ptr(), constant, values.as_ptr()))?;
+            check_hresult!(self.inner.SetMatrix(device.as_ptr(), constant, values))?;
         }
 
         Ok(())
