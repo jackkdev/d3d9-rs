@@ -1,6 +1,7 @@
 //! Provides error handling for Windows APIs.
 use std::{
     error::Error,
+    ffi::CString,
     fmt,
     fmt::{Debug, Display, Formatter},
     mem::transmute,
@@ -29,7 +30,7 @@ impl WindowsError {
             const N_BUFFER: usize = 512;
             let mut buffer = [0i8; N_BUFFER];
 
-            FormatMessageA(
+            let len = FormatMessageA(
                 FORMAT_MESSAGE_FROM_SYSTEM,
                 ptr::null(),
                 hresult as u32,
@@ -41,8 +42,11 @@ impl WindowsError {
 
             let buffer: [u8; N_BUFFER] = transmute(buffer);
 
-            String::from_utf8(buffer.to_vec())
-                .expect("failed to convert windows error message into a utf-8 string")
+            CString::from_vec_with_nul(buffer.to_vec()[0..=len as usize].to_vec())
+                .expect("failed to convert windows error message into a string")
+                .to_str()
+                .expect("failed to convert to str")
+                .to_string()
         };
 
         Self {
@@ -63,9 +67,29 @@ impl Display for WindowsError {
 #[macro_export]
 macro_rules! check_hresult {
     ($hresult:expr) => {{
-        let result = $hresult;
-        if result != 0 {
-            return Err($crate::error::WindowsError::from_hresult(result));
-        }
+        let f = || -> Result<(), $crate::error::WindowsError> {
+            let result = $hresult;
+            if result != 0 {
+                Err($crate::error::WindowsError::from_hresult(result))
+            } else {
+                Ok(())
+            }
+        };
+        f()
+    }};
+}
+
+#[macro_export]
+macro_rules! check_hresult_mut {
+    ($hresult:expr) => {{
+        let mut f = || -> Result<(), $crate::error::WindowsError> {
+            let result = $hresult;
+            if result != 0 {
+                Err($crate::error::WindowsError::from_hresult(result))
+            } else {
+                Ok(())
+            }
+        };
+        f()
     }};
 }

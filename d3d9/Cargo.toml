@@ -11,7 +11,8 @@ edition = "2021"
 [dependencies]
 bitfield = "0.14.0"
 d3dx9-sys = { path = "../d3dx9-sys" }
+thiserror = "1.0.58"
 
 [dependencies.winapi]
 version = "0.3.9"
-features = ["d3d9", "d3d9types", "d3d9caps", "minwindef", "unknwnbase", "winnt", "winbase", "windef"]
+features = ["d3d9", "d3d9types", "d3d9caps", "minwindef", "unknwnbase", "winnt", "winbase", "windef", "wingdi"]

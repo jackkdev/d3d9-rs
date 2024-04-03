@@ -1,20 +1,18 @@
-use std::{marker::PhantomData, ptr::NonNull};
+use std::ptr::NonNull;
 
 use winapi::shared::d3d9::IDirect3DSwapChain9;
 
 use crate::com::Com;
 
 #[derive(Clone)]
-pub struct SwapChain<'device> {
+pub struct SwapChain {
     inner: Com<IDirect3DSwapChain9>,
-    _lifetime: PhantomData<&'device ()>,
 }
 
-impl<'device> SwapChain<'device> {
+impl SwapChain {
     pub fn with_ptr(inner: NonNull<IDirect3DSwapChain9>) -> Self {
         Self {
             inner: Com::with_ptr(inner),
-            _lifetime: PhantomData::default(),
         }
     }
 

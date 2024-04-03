@@ -5,16 +5,14 @@ use winapi::shared::d3d9::IDirect3DSurface9;
 use crate::com::Com;
 
 #[derive(Clone)]
-pub struct Surface<'device> {
+pub struct Surface {
     inner: Com<IDirect3DSurface9>,
-    _lifetime: PhantomData<&'device ()>,
 }
 
-impl<'device> Surface<'device> {
+impl Surface {
     pub fn with_ptr(inner: NonNull<IDirect3DSurface9>) -> Self {
         Self {
             inner: Com::with_ptr(inner),
-            _lifetime: PhantomData::default(),
         }
     }
 

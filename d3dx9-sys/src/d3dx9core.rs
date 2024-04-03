@@ -1,3 +1,7 @@
+#![allow(non_camel_case_types)]
+#![allow(non_upper_case_globals)]
+#![allow(non_snake_case)]
+
 use winapi::{
     shared::minwindef::{DWORD, LPVOID},
     um::unknwnbase::{IUnknown, IUnknownVtbl},
@@ -13,4 +17,4 @@ interface ID3DXBuffer(ID3DXBufferVtbl): IUnknown(IUnknownVtbl) {
     fn GetBufferSize() -> DWORD,
 }}
 
-pub type LPD3DXBUFFER = *const ID3DXBuffer;
+pub type LPD3DXBUFFER = *mut ID3DXBuffer;

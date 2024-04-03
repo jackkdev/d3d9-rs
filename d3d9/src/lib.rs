@@ -5,7 +5,7 @@
 //! ```rs
 //! use d3d9::{
 //!     error::WindowsResult,
-//!     interfaces::Context,
+//!     std::interfaces::Context,
 //! };
 //!
 //! fn main() -> WindowsResult<()> {
@@ -31,5 +31,5 @@
 
 pub mod com;
 pub mod error;
-pub mod interfaces;
-pub mod types;
+pub mod std;
+pub mod x;

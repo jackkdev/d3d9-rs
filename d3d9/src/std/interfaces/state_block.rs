@@ -5,16 +5,14 @@ use winapi::shared::d3d9::IDirect3DStateBlock9;
 use crate::com::Com;
 
 #[derive(Clone)]
-pub struct StateBlock<'device> {
+pub struct StateBlock {
     inner: Com<IDirect3DStateBlock9>,
-    _lifetime: PhantomData<&'device ()>,
 }
 
-impl<'device> StateBlock<'device> {
+impl StateBlock {
     pub fn with_ptr(inner: NonNull<IDirect3DStateBlock9>) -> Self {
         Self {
             inner: Com::with_ptr(inner),
-            _lifetime: PhantomData::default(),
         }
     }
 

@@ -11,12 +11,18 @@ use winapi::shared::{
     windef::{HMONITOR, HWND},
 };
 
-use crate::{check_hresult, com::Com, error::WindowsResult, types::{
-    Adapter, AdapterIdentifier, DeviceType, DisplayMode, Format, MultiSampleType,
-    PresentationParameters, ResourceType,
-}};
-use crate::interfaces::device::Device;
-use crate::types::Caps;
+use crate::{
+    check_hresult, check_hresult_mut,
+    com::Com,
+    error::WindowsResult,
+    std::{
+        interfaces::device::Device,
+        types::{
+            Adapter, AdapterIdentifier, BehaviorFlags, Caps, DeviceType, DisplayMode, Format,
+            MultiSampleType, PresentationParameters, ResourceType, Usage,
+        },
+    },
+};
 
 /// A safe wrapper around the [`IDirect3D9`] interface.
 pub struct Context {
@@ -51,7 +57,7 @@ impl Context {
                 adapter_format as u32,
                 render_target_format as u32,
                 depth_stencil_format as u32,
-            ));
+            ))?;
         }
 
         Ok(())
@@ -62,7 +68,7 @@ impl Context {
         adapter: Adapter,
         device_type: DeviceType,
         adapter_format: Format,
-        usage: u32,
+        usage: Usage,
         resource_type: ResourceType,
         check_format: Format,
     ) -> WindowsResult<()> {
@@ -71,10 +77,10 @@ impl Context {
                 adapter.into(),
                 device_type as u32,
                 adapter_format as u32,
-                usage,
+                usage.0,
                 resource_type as u32,
                 check_format as u32,
-            ));
+            ))?;
         }
 
         Ok(())
@@ -93,7 +99,7 @@ impl Context {
                 device_type as u32,
                 source_format as u32,
                 target_format as u32,
-            ));
+            ))?;
         }
 
         Ok(())
@@ -116,7 +122,7 @@ impl Context {
                 windowed as i32,
                 multi_sample_type.into(),
                 quality_levels,
-            ));
+            ))?;
         }
 
         Ok(())
@@ -137,7 +143,7 @@ impl Context {
                 adapter_format as u32,
                 back_buffer_format as u32,
                 windowed as i32,
-            ));
+            ))?;
         }
 
         Ok(())
@@ -148,7 +154,7 @@ impl Context {
         adapter: Adapter,
         device_type: DeviceType,
         window: HWND,
-        behavior_flags: u32,
+        behavior_flags: BehaviorFlags,
         presentation_parameters: &mut PresentationParameters,
     ) -> WindowsResult<Device> {
         let device = unsafe {
@@ -160,10 +166,10 @@ impl Context {
                 adapter.into(),
                 device_type as u32,
                 window,
-                behavior_flags,
+                behavior_flags.into(),
                 (&mut c_presentation_parameters) as *mut _,
                 (&mut c_device) as *mut _,
-            ));
+            ))?;
 
             // CreateDevice *might* modify these properties.
             presentation_parameters.back_buffer_width = c_presentation_parameters.BackBufferWidth;
@@ -192,12 +198,12 @@ impl Context {
                 Format: 0,
             };
 
-            check_hresult!(self.inner.EnumAdapterModes(
+            check_hresult_mut!(self.inner.EnumAdapterModes(
                 adapter.into(),
                 format as u32,
                 mode,
                 &mut c_display_mode as *mut _,
-            ));
+            ))?;
 
             Ok(c_display_mode.into())
         }
@@ -216,9 +222,9 @@ impl Context {
                 Format: 0,
             };
 
-            check_hresult!(self
+            check_hresult_mut!(self
                 .inner
-                .GetAdapterDisplayMode(adapter.into(), &mut c_display_mode as *mut _));
+                .GetAdapterDisplayMode(adapter.into(), &mut c_display_mode as *mut _))?;
 
             Ok(c_display_mode.into())
         }
@@ -233,11 +239,11 @@ impl Context {
             let mut adapter_identifier: D3DADAPTER_IDENTIFIER9 =
                 MaybeUninit::zeroed().assume_init();
 
-            check_hresult!(self.inner.GetAdapterIdentifier(
+            check_hresult_mut!(self.inner.GetAdapterIdentifier(
                 adapter.into(),
                 flags,
                 &mut adapter_identifier as *mut _,
-            ));
+            ))?;
 
             Ok(adapter_identifier.into())
         }
@@ -261,11 +267,11 @@ impl Context {
     ) -> WindowsResult<Caps> {
         unsafe {
             let mut caps: D3DCAPS9 = MaybeUninit::zeroed().assume_init();
-            check_hresult!(self.inner.GetDeviceCaps(
+            check_hresult_mut!(self.inner.GetDeviceCaps(
                 adapter.into(),
                 device_type as u32,
                 &mut caps as *mut _
-            ));
+            ))?;
 
             Ok(Caps(caps))
         }

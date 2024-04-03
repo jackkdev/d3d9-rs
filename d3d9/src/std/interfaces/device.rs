@@ -9,48 +9,53 @@ use winapi::{
             IDirect3DVertexShader9, IDirect3DVolumeTexture9,
         },
         d3d9types::{D3DPRESENT_PARAMETERS, D3DVERTEXELEMENT9},
+        windef::HWND,
     },
-    um::winnt::{HANDLE, VOID},
+    um::winnt::VOID,
 };
 
 use crate::{
-    check_hresult,
+    check_hresult, check_hresult_mut,
     com::Com,
     error::WindowsResult,
-    interfaces::{
-        CubeTexture, IndexBuffer, PixelShader, Query, StateBlock, Surface, SwapChain, Texture,
-        VertexBuffer, VertexDeclaration, VertexShader, VolumeTexture,
-    },
-    types::{
-        Color, Format, Handle, MultiSampleType, Pool, PresentationParameters, PrimitiveType,
-        QueryType, Rect, StateBlockType, Usage, VertexElement, FVF,
+    std::{
+        interfaces::{
+            CubeTexture, IndexBuffer, PixelShader, Query, StateBlock, Surface, SwapChain, Texture,
+            VertexBuffer, VertexDeclaration, VertexShader, VolumeTexture,
+        },
+        types::{
+            Clear, Color, Format, Handle, MultiSampleType, Pool, PresentationParameters,
+            PrimitiveType, QueryType, Rect, RegionData, StateBlockType, Usage, VertexElement, FVF,
+        },
     },
 };
 
 #[derive(Clone)]
-pub struct Device<'context> {
+pub struct Device {
     inner: Com<IDirect3DDevice9>,
-    _lifetime: PhantomData<&'context ()>,
 }
 
-impl<'context> Device<'context> {
+impl Device {
     pub fn with_ptr(inner: NonNull<IDirect3DDevice9>) -> Self {
         Self {
             inner: Com::with_ptr(inner),
-            _lifetime: PhantomData::default(),
         }
+    }
+
+    pub fn as_ptr(&self) -> *mut IDirect3DDevice9 {
+        self.inner.as_ptr()
     }
 
     pub fn begin_scene(&self) -> WindowsResult<()> {
         unsafe {
-            check_hresult!(self.inner.BeginScene());
+            check_hresult!(self.inner.BeginScene())?;
         }
         Ok(())
     }
 
     pub fn begin_state_block(&self) -> WindowsResult<()> {
         unsafe {
-            check_hresult!(self.inner.BeginStateBlock());
+            check_hresult!(self.inner.BeginStateBlock())?;
         }
         Ok(())
     }
@@ -58,8 +63,8 @@ impl<'context> Device<'context> {
     pub fn clear(
         &self,
         count: u32,
-        rects: &[Rect],
-        flags: u32,
+        rects: Option<&[Rect]>,
+        flags: Clear,
         color: Color,
         z: f32,
         stencil: u32,
@@ -67,12 +72,14 @@ impl<'context> Device<'context> {
         unsafe {
             check_hresult!(self.inner.Clear(
                 count,
-                transmute(rects.as_ptr()),
-                flags,
+                rects
+                    .map(|inner| transmute(inner.as_ptr()))
+                    .unwrap_or(ptr::null()),
+                flags.0,
                 color.into(),
                 z,
                 stencil
-            ));
+            ))?;
         }
         Ok(())
     }
@@ -90,7 +97,7 @@ impl<'context> Device<'context> {
                     .map(|rect| rect as *const _ as *mut _)
                     .unwrap_or(ptr::null_mut()),
                 color.into()
-            ));
+            ))?;
         }
 
         Ok(())
@@ -105,10 +112,10 @@ impl<'context> Device<'context> {
                 presentation_parameters.clone().into();
             let mut c_swap_chain: *mut IDirect3DSwapChain9 = ptr::null_mut();
 
-            check_hresult!(self.inner.CreateAdditionalSwapChain(
+            check_hresult_mut!(self.inner.CreateAdditionalSwapChain(
                 &mut c_presentation_parameters as *mut _,
                 &mut c_swap_chain as *mut _
-            ));
+            ))?;
 
             // CreateAdditionalSwapChain *might* modify these properties.
             presentation_parameters.back_buffer_width = c_presentation_parameters.BackBufferWidth;
@@ -134,7 +141,7 @@ impl<'context> Device<'context> {
         unsafe {
             let mut c_cube_texture: *mut IDirect3DCubeTexture9 = ptr::null_mut();
 
-            check_hresult!(self.inner.CreateCubeTexture(
+            check_hresult_mut!(self.inner.CreateCubeTexture(
                 edge_length,
                 levels,
                 usage,
@@ -142,7 +149,7 @@ impl<'context> Device<'context> {
                 pool as u32,
                 &mut c_cube_texture as *mut _,
                 ptr::null_mut()
-            ));
+            ))?;
 
             Ok(CubeTexture::with_ptr(
                 NonNull::new(c_cube_texture).expect("returned cube texture is null"),
@@ -171,7 +178,7 @@ impl<'context> Device<'context> {
                 discard as i32,
                 &mut c_surface as *mut _,
                 ptr::null_mut()
-            ));
+            ))?;
 
             Ok(Surface::with_ptr(
                 NonNull::new(c_surface).expect("returned surface is null"),
@@ -189,14 +196,14 @@ impl<'context> Device<'context> {
         unsafe {
             let mut c_index_buffer: *mut IDirect3DIndexBuffer9 = ptr::null_mut();
 
-            check_hresult!(self.inner.CreateIndexBuffer(
+            check_hresult_mut!(self.inner.CreateIndexBuffer(
                 length,
                 usage.0,
                 format as u32,
                 pool as u32,
                 &mut c_index_buffer as *mut _,
                 ptr::null_mut()
-            ));
+            ))?;
 
             Ok(IndexBuffer::with_ptr(
                 NonNull::new(c_index_buffer).expect("returned index buffer is null"),
@@ -214,14 +221,14 @@ impl<'context> Device<'context> {
         unsafe {
             let mut c_surface: *mut IDirect3DSurface9 = ptr::null_mut();
 
-            check_hresult!(self.inner.CreateOffscreenPlainSurface(
+            check_hresult_mut!(self.inner.CreateOffscreenPlainSurface(
                 width,
                 height,
                 format as u32,
                 pool as u32,
                 &mut c_surface as *mut _,
                 ptr::null_mut()
-            ));
+            ))?;
 
             Ok(Surface::with_ptr(
                 NonNull::new(c_surface).expect("returned off screen plain surface is null"),
@@ -233,9 +240,9 @@ impl<'context> Device<'context> {
         unsafe {
             let mut c_pixel_shader: *mut IDirect3DPixelShader9 = ptr::null_mut();
 
-            check_hresult!(self
+            check_hresult_mut!(self
                 .inner
-                .CreatePixelShader(shader.as_ptr(), &mut c_pixel_shader as *mut _));
+                .CreatePixelShader(shader.as_ptr(), &mut c_pixel_shader as *mut _))?;
 
             Ok(PixelShader::with_ptr(
                 NonNull::new(c_pixel_shader).expect("returned pixel shader is null"),
@@ -247,9 +254,9 @@ impl<'context> Device<'context> {
         unsafe {
             let mut c_query: *mut IDirect3DQuery9 = ptr::null_mut();
 
-            check_hresult!(self
+            check_hresult_mut!(self
                 .inner
-                .CreateQuery(query_type as u32, &mut c_query as *mut _));
+                .CreateQuery(query_type as u32, &mut c_query as *mut _))?;
 
             Ok(Query::with_ptr(
                 NonNull::new(c_query).expect("returned query is null"),
@@ -278,7 +285,7 @@ impl<'context> Device<'context> {
                 lockable as i32,
                 &mut c_surface as *mut _,
                 ptr::null_mut()
-            ));
+            ))?;
 
             Ok(Surface::with_ptr(
                 NonNull::new(c_surface).expect("returned render target surface is null"),
@@ -293,9 +300,9 @@ impl<'context> Device<'context> {
         unsafe {
             let mut c_state_block: *mut IDirect3DStateBlock9 = ptr::null_mut();
 
-            check_hresult!(self
+            check_hresult_mut!(self
                 .inner
-                .CreateStateBlock(state_block_type as u32, &mut c_state_block as *mut _));
+                .CreateStateBlock(state_block_type as u32, &mut c_state_block as *mut _))?;
 
             Ok(StateBlock::with_ptr(
                 NonNull::new(c_state_block).expect("returned state block is null"),
@@ -315,7 +322,7 @@ impl<'context> Device<'context> {
         unsafe {
             let mut c_texture: *mut IDirect3DTexture9 = ptr::null_mut();
 
-            check_hresult!(self.inner.CreateTexture(
+            check_hresult_mut!(self.inner.CreateTexture(
                 width,
                 height,
                 levels,
@@ -324,7 +331,7 @@ impl<'context> Device<'context> {
                 pool as u32,
                 &mut c_texture as *mut _,
                 ptr::null_mut(),
-            ));
+            ))?;
 
             Ok(Texture::with_ptr(
                 NonNull::new(c_texture).expect("returned texture is null"),
@@ -342,14 +349,14 @@ impl<'context> Device<'context> {
         unsafe {
             let mut c_vertex_buffer: *mut IDirect3DVertexBuffer9 = ptr::null_mut();
 
-            check_hresult!(self.inner.CreateVertexBuffer(
+            check_hresult_mut!(self.inner.CreateVertexBuffer(
                 length,
                 usage.0,
                 fvf.0,
                 pool as u32,
                 &mut c_vertex_buffer as *mut _,
                 ptr::null_mut(),
-            ));
+            ))?;
 
             Ok(VertexBuffer::with_ptr(
                 NonNull::new(c_vertex_buffer).expect("returned vertex buffer is null"),
@@ -378,10 +385,10 @@ impl<'context> Device<'context> {
                 UsageIndex: 0,
             });
 
-            check_hresult!(self.inner.CreateVertexDeclaration(
+            check_hresult_mut!(self.inner.CreateVertexDeclaration(
                 real_elements.as_ptr(),
                 &mut c_vertex_declaration as *mut _
-            ));
+            ))?;
 
             Ok(VertexDeclaration::with_ptr(
                 NonNull::new(c_vertex_declaration).expect("returned vertex declaration is null"),
@@ -393,9 +400,9 @@ impl<'context> Device<'context> {
         unsafe {
             let mut c_vertex_shader: *mut IDirect3DVertexShader9 = ptr::null_mut();
 
-            check_hresult!(self
+            check_hresult_mut!(self
                 .inner
-                .CreateVertexShader(shader.as_ptr(), &mut c_vertex_shader as *mut _));
+                .CreateVertexShader(shader.as_ptr(), &mut c_vertex_shader as *mut _))?;
 
             Ok(VertexShader::with_ptr(
                 NonNull::new(c_vertex_shader).expect("returned vertex shader is null"),
@@ -416,7 +423,7 @@ impl<'context> Device<'context> {
         unsafe {
             let mut c_volume_texture: *mut IDirect3DVolumeTexture9 = ptr::null_mut();
 
-            check_hresult!(self.inner.CreateVolumeTexture(
+            check_hresult_mut!(self.inner.CreateVolumeTexture(
                 width,
                 height,
                 depth,
@@ -426,7 +433,7 @@ impl<'context> Device<'context> {
                 pool as u32,
                 &mut c_volume_texture as *mut _,
                 ptr::null_mut()
-            ));
+            ))?;
 
             Ok(VolumeTexture::with_ptr(
                 NonNull::new(c_volume_texture).expect("returned volume texture is null"),
@@ -435,7 +442,9 @@ impl<'context> Device<'context> {
     }
 
     pub fn delete_patch(&self, handle: Handle) -> WindowsResult<()> {
-        unsafe { check_hresult!(self.inner.DeletePatch(handle.into())) }
+        unsafe {
+            check_hresult!(self.inner.DeletePatch(handle.into()))?;
+        }
 
         Ok(())
     }
@@ -457,7 +466,7 @@ impl<'context> Device<'context> {
                 n_vertices,
                 indices_index,
                 n_primitives
-            ));
+            ))?;
         }
 
         Ok(())
@@ -483,7 +492,7 @@ impl<'context> Device<'context> {
                 indices_format as u32,
                 vertices.as_ptr() as *const VOID,
                 vertices_stride
-            ));
+            ))?;
         }
 
         Ok(())
@@ -500,7 +509,7 @@ impl<'context> Device<'context> {
                 primitive_type as u32,
                 start_vertex,
                 n_primitives
-            ));
+            ))?;
         }
 
         Ok(())
@@ -519,7 +528,99 @@ impl<'context> Device<'context> {
                 n_primitives,
                 vertices.as_ptr() as *const VOID,
                 vertices_stride
-            ));
+            ))?;
+        }
+
+        Ok(())
+    }
+
+    // DrawRectPatch
+    // DrawTriPatch
+
+    pub fn end_scene(&self) -> WindowsResult<()> {
+        unsafe {
+            check_hresult!(self.inner.EndScene())?;
+        }
+
+        Ok(())
+    }
+
+    pub fn end_state_block(&self) -> WindowsResult<StateBlock> {
+        unsafe {
+            let mut c_state_block: *mut IDirect3DStateBlock9 = ptr::null_mut();
+
+            check_hresult_mut!(self.inner.EndStateBlock(&mut c_state_block as *mut _))?;
+
+            Ok(StateBlock::with_ptr(
+                NonNull::new(c_state_block).expect("returned state block is null"),
+            ))
+        }
+    }
+
+    // ...
+
+    pub fn present(
+        &self,
+        src_rect: Option<&Rect>,
+        dest_rect: Option<&Rect>,
+        window_override: Option<HWND>,
+        dirty_region_data: Option<&RegionData>,
+    ) -> WindowsResult<()> {
+        unsafe {
+            check_hresult!(self.inner.Present(
+                src_rect
+                    .map(|inner| inner as *const _ as *const _)
+                    .unwrap_or(ptr::null()),
+                dest_rect
+                    .map(|inner| inner as *const _ as *const _)
+                    .unwrap_or(ptr::null()),
+                window_override.unwrap_or(ptr::null_mut()),
+                dirty_region_data
+                    .map(|inner| &inner.0 as *const _)
+                    .unwrap_or(ptr::null())
+            ))?;
+        }
+
+        Ok(())
+    }
+
+    pub fn set_vertex_declaration(
+        &self,
+        vertex_declaration: &VertexDeclaration,
+    ) -> WindowsResult<()> {
+        unsafe {
+            check_hresult!(self.inner.SetVertexDeclaration(vertex_declaration.as_ptr()))?;
+        }
+
+        Ok(())
+    }
+
+    pub fn set_indices(&self, index_buffer: &IndexBuffer) -> WindowsResult<()> {
+        unsafe { check_hresult!(self.inner.SetIndices(index_buffer.as_ptr())) }
+    }
+
+    pub fn set_vertex_shader(&self, vertex_shader: &VertexShader) -> WindowsResult<()> {
+        unsafe { check_hresult!(self.inner.SetVertexShader(vertex_shader.as_ptr())) }
+    }
+
+    pub fn set_pixel_shader(&self, pixel_shader: &PixelShader) -> WindowsResult<()> {
+        unsafe { check_hresult!(self.inner.SetPixelShader(pixel_shader.as_ptr())) }
+    }
+
+    pub fn set_stream_source(
+        &self,
+        index: u32,
+        vertex_buffer: &VertexBuffer,
+        byte_offset: u32,
+        stride: u32,
+    ) -> WindowsResult<()> {
+        unsafe {
+            check_hresult!(self.inner.SetStreamSource(
+                index,
+                vertex_buffer.as_ptr(),
+                byte_offset,
+                stride
+            ))?;
         }
 
         Ok(())

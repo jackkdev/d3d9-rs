@@ -1,3 +1,7 @@
+#![allow(non_camel_case_types)]
+#![allow(non_upper_case_globals)]
+#![allow(non_snake_case)]
+
 use winapi::{
     shared::{
         d3d9::LPDIRECT3DDEVICE9,
@@ -117,13 +121,13 @@ interface ID3DXConstantTable(ID3DXConstantTableVtbl): IUnknown(IUnknownVtbl) {
     fn GetBufferPointer() -> LPVOID,
     fn GetBufferSize() -> DWORD,
     fn GetDesc(
-        pDesc: *const D3DXCONSTANTTABLE_DESC,
-    ) -> (),
+        pDesc: *mut D3DXCONSTANTTABLE_DESC,
+    ) -> HRESULT,
     fn GetConstantDesc(
         hConstant: D3DXHANDLE,
         pConstantDesc: *const D3DXCONSTANT_DESC,
         pCount: *mut u32,
-    ) -> (),
+    ) -> HRESULT,
     fn GetSamplerIndex(
         hConstant: D3DXHANDLE,
     ) -> u32,
@@ -141,94 +145,94 @@ interface ID3DXConstantTable(ID3DXConstantTableVtbl): IUnknown(IUnknownVtbl) {
     ) -> D3DXHANDLE,
     fn SetDefaults(
         pDevice: LPDIRECT3DDEVICE9,
-    ) -> (),
+    ) -> HRESULT,
     fn SetValue(
         pDevice: LPDIRECT3DDEVICE9,
         hConstant: D3DXHANDLE,
         pData: LPCVOID,
         Bytes: u32,
-    ) -> (),
+    ) -> HRESULT,
     fn SetBool(
         pDevice: LPDIRECT3DDEVICE9,
         hConstant: D3DXHANDLE,
         b: bool,
-    ) -> (),
+    ) -> HRESULT,
     fn SetBoolArray(
         pDevice: LPDIRECT3DDEVICE9,
         hConstant: D3DXHANDLE,
         b: *const bool,
         count: u32,
-    ) -> (),
+    ) -> HRESULT,
     fn SetInt(
         pDevice: LPDIRECT3DDEVICE9,
         hConstant: D3DXHANDLE,
         n: i32,
-    ) -> (),
+    ) -> HRESULT,
     fn SetIntArray(
         pDevice: LPDIRECT3DDEVICE9,
         hConstant: D3DXHANDLE,
         n: *const i32,
         count: u32,
-    ) -> (),
+    ) -> HRESULT,
     fn SetFloat(
         pDevice: LPDIRECT3DDEVICE9,
         hConstant: D3DXHANDLE,
         n: f32,
-    ) -> (),
+    ) -> HRESULT,
     fn SetFloatArray(
         pDevice: LPDIRECT3DDEVICE9,
         hConstant: D3DXHANDLE,
         n: *const f32,
         count: u32,
-    ) -> (),
+    ) -> HRESULT,
     fn SetVector(
         pDevice: LPDIRECT3DDEVICE9,
         hConstant: D3DXHANDLE,
         n: *const f32,
-    ) -> (),
+    ) -> HRESULT,
     fn SetVectorArray(
         pDevice: LPDIRECT3DDEVICE9,
         hConstant: D3DXHANDLE,
         n: *const f32,
         count: u32,
-    ) -> (),
+    ) -> HRESULT,
     fn SetMatrix(
         pDevice: LPDIRECT3DDEVICE9,
         hConstant: D3DXHANDLE,
         n: *const f32,
-    ) -> (),
+    ) -> HRESULT,
     fn SetMatrixArray(
         pDevice: LPDIRECT3DDEVICE9,
         hConstant: D3DXHANDLE,
-        n: *const f32,
+        n: *const *const f32,
         count: u32,
-    ) -> (),
+    ) -> HRESULT,
     fn SetMatrixPointerArray(
         pDevice: LPDIRECT3DDEVICE9,
         hConstant: D3DXHANDLE,
         n: *const *const f32,
         count: u32,
-    ) -> (),
+    ) -> HRESULT,
     fn SetMatrixTranspose(
         pDevice: LPDIRECT3DDEVICE9,
         hConstant: D3DXHANDLE,
         n: *const f32,
-    ) -> (),
+    ) -> HRESULT,
     fn SetMatrixTransposeArray(
         pDevice: LPDIRECT3DDEVICE9,
         hConstant: D3DXHANDLE,
         n: *const f32,
         count: u32,
-    ) -> (),
+    ) -> HRESULT,
     fn SetMatrixTransposePointerArray(
         pDevice: LPDIRECT3DDEVICE9,
         hConstant: D3DXHANDLE,
         n: *const *const f32,
         count: u32,
-    ) -> (),
+    ) -> HRESULT,
 }}
 
-pub type LPD3DXCONSTANTTABLE = *const ID3DXConstantTable;
+pub type LPD3DXCONSTANTTABLE = *mut ID3DXConstantTable;
 
 #[link(name = "d3dx9")]
 extern "system" {
