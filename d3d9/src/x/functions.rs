@@ -7,8 +7,12 @@ use std::{
 
 use d3dx9_sys::{
     d3dx9core::ID3DXBuffer,
-    d3dx9shader::{D3DXCompileShader, D3DXCompileShaderFromFileA, ID3DXConstantTable, D3DXMACRO},
+    d3dx9shader::{
+        D3DXCompileShader, D3DXCompileShaderFromFileA, ID3DXConstantTable, D3DXMACRO,
+        D3DXSHADER_DEBUG,
+    },
 };
+use d3dx9_sys::d3dx9shader::D3DXSHADER_PACKMATRIX_COLUMNMAJOR;
 
 use crate::{
     check_hresult, check_hresult_mut,
@@ -73,7 +77,7 @@ pub fn compile_shader<S: Into<String>, F: Into<String>, P: Into<String>>(
             ptr::null(),
             c_function_name.as_ptr(),
             c_profile.as_ptr(),
-            0,
+            D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_COLUMNMAJOR,
             &mut c_shader as *mut _,
             &mut c_error_messages as *mut _,
             &mut c_constant_table as *mut _,

@@ -8,7 +8,7 @@ use winapi::{
             IDirect3DTexture9, IDirect3DVertexBuffer9, IDirect3DVertexDeclaration9,
             IDirect3DVertexShader9, IDirect3DVolumeTexture9,
         },
-        d3d9types::{D3DPRESENT_PARAMETERS, D3DVERTEXELEMENT9},
+        d3d9types::{D3DPRESENT_PARAMETERS, D3DRS_CLIPPING, D3DVERTEXELEMENT9, D3DVIEWPORT9},
         windef::HWND,
     },
     um::winnt::VOID,
@@ -621,6 +621,38 @@ impl Device {
                 byte_offset,
                 stride
             ))?;
+        }
+
+        Ok(())
+    }
+
+    pub fn set_viewport(
+        &self,
+        x: u32,
+        y: u32,
+        width: u32,
+        height: u32,
+        max_z: f32,
+        min_z: f32,
+    ) -> WindowsResult<()> {
+        unsafe {
+            let viewport = D3DVIEWPORT9 {
+                X: x,
+                Y: y,
+                Width: width,
+                Height: height,
+                MaxZ: max_z,
+                MinZ: min_z,
+            };
+            check_hresult!(self.inner.SetViewport(&viewport as *const _))?;
+        }
+
+        Ok(())
+    }
+
+    pub fn set_clipping(&self, value: bool) -> WindowsResult<()> {
+        unsafe {
+            check_hresult!(self.inner.SetRenderState(D3DRS_CLIPPING, value as u32))?;
         }
 
         Ok(())
