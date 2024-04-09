@@ -335,6 +335,7 @@ impl Device {
 
             Ok(Texture::with_ptr(
                 NonNull::new(c_texture).expect("returned texture is null"),
+                (width, height),
             ))
         }
     }
@@ -653,6 +654,14 @@ impl Device {
     pub fn set_clipping(&self, value: bool) -> WindowsResult<()> {
         unsafe {
             check_hresult!(self.inner.SetRenderState(D3DRS_CLIPPING, value as u32))?;
+        }
+
+        Ok(())
+    }
+
+    pub fn set_texture(&self, stage: u32, texture: &Texture) -> WindowsResult<()> {
+        unsafe {
+            check_hresult!(self.inner.SetTexture(stage, texture.as_ptr() as *mut _))?;
         }
 
         Ok(())

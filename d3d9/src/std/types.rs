@@ -405,6 +405,10 @@ impl Into<u32> for Handle {
     }
 }
 
+bitfield! {
+    pub struct LockFlags(u32);
+}
+
 /// Represents the type of multi-sampling for buffers/surfaces.
 #[derive(Clone, Debug)]
 pub enum MultiSampleType {
