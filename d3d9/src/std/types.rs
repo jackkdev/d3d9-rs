@@ -407,6 +407,10 @@ impl Into<u32> for Handle {
 
 bitfield! {
     pub struct LockFlags(u32);
+
+    impl Debug;
+
+    set_discard, discard: 13;
 }
 
 /// Represents the type of multi-sampling for buffers/surfaces.
